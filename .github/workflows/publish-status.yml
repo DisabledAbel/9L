@@ -1,12 +1,12 @@
-name: Auto Publish Fortnite Status NPM
+name: Auto Update Fortnite Status
 
 on:
   schedule:
     - cron: "*/10 * * * *"  # every 10 minutes
-  workflow_dispatch:
+  workflow_dispatch:       # allows manual trigger
 
 jobs:
-  publish:
+  update-status:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,16 +25,16 @@ jobs:
       - name: Fetch Fortnite Status and Generate Badge
         run: node -e "import('./index.js').then(async mod=>{ await mod.saveStatusToFile(); await mod.saveBadgeJson(); })"
 
-      - name: Update version
+      - name: Commit updated status files
         run: |
           git config --local user.name "github-actions"
           git config --local user.email "github-actions@github.com"
-          npm version patch -m "Auto-update Fortnite status %s"
+          git add status.json status-badge.json
+          git commit -m "Auto-update Fortnite status JSON" || echo "No changes to commit"
+          git push
 
-      - name: Push changes
-        run: git push --follow-tags
-
-      - name: Publish to NPM
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Optional: Uncomment if you want to publish NPM package manually
+      # - name: Publish to NPM
+      #   run: npm publish
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
