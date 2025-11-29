@@ -3,7 +3,7 @@ name: Auto Publish Fortnite Status NPM
 on:
   schedule:
     - cron: "*/10 * * * *"  # every 10 minutes
-  workflow_dispatch:       # allows manual trigger
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -18,7 +18,6 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
-          # cache removed for iPad-friendly workflow
 
       - name: Install dependencies
         run: npm install
