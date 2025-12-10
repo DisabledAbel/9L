@@ -2,59 +2,171 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Fortnite Server Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fortnite Status Tracker</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #121212; color: #fff; text-align: center; padding: 50px; }
-    h1 { color: #8a2be2; margin-bottom: 20px; }
-    .badge { display: inline-block; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 1.2em; margin-bottom: 20px; color: #fff; }
-    .status { display: inline-block; background: #222; padding: 20px; border-radius: 10px; text-align: left; min-width: 300px; }
-    .service { margin: 5px 0; }
-    .online { color: #00ff00; }
-    .degraded { color: #ffff00; }
-    .offline { color: #ff0000; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0d1117;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+
+    .overall-card, .card {
+      background: #161b22;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      max-width: 600px;
+      width: 100%;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .overall-status {
+      font-size: 1.8rem;
+      font-weight: bold;
+      padding: 12px 20px;
+      border-radius: 12px;
+      display: inline-block;
+    }
+
+    .service {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      margin: 10px 0;
+      border-radius: 12px;
+      background: #0f1318;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .service:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .status {
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      min-width: 100px;
+      text-align: center;
+    }
+
+    .operational { background: #00ff90; color: #000; }
+    .minor { background: #ffdd57; color: #000; }
+    .major { background: #ff4d4d; color: #fff; }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.9rem;
+      color: #888;
+    }
+
+    a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
-  <h1>Fortnite Server Status</h1>
-  <div id="badge" class="badge">Loading...</div>
-  <div class="status" id="status">Loading...</div>
+
+  <h1>Fortnite & Epic Games Status</h1>
+
+  <div class="overall-card">
+    <p>Overall Fortnite Status:</p>
+    <p id="overallStatus" class="overall-status">Loading...</p>
+  </div>
+
+  <div class="card" id="servicesContainer">
+    <p>Loading system statuses...</p>
+  </div>
+
+  <footer>
+    Data provided by <a href="https://status.epicgames.com" target="_blank">Epic Games Status</a>
+  </footer>
+
   <script>
-    const STATUS_JSON = "status.json";
-    const BADGE_JSON = "status-badge.json";
+    async function fetchStatuses() {
+      const container = document.getElementById('servicesContainer');
+      const overall = document.getElementById('overallStatus');
 
-    async function fetchStatus() {
       try {
-        const badgeRes = await fetch(BADGE_JSON);
-        const badgeData = await badgeRes.json();
-        const badgeEl = document.getElementById("badge");
-        badgeEl.textContent = badgeData.message;
-        badgeEl.style.backgroundColor = badgeData.color;
+        const res = await fetch('https://status.epicgames.com/api/v2/components.json');
+        const data = await res.json();
+        const components = data.components;
 
-        const statusRes = await fetch(STATUS_JSON);
-        const statusData = await statusRes.json();
+        container.innerHTML = ''; // Clear previous
 
-        let html = `<p><strong>Overall Status:</strong> ${statusData.overall_status}</p><h3>Services:</h3><ul>`;
-        for (const [service, state] of Object.entries(statusData.services)) {
-          let cls = "online";
-          const s = state.toLowerCase();
-          if (s.includes("degraded")) cls = "degraded";
-          else if (s.includes("major")) cls = "offline";
-          html += `<li class="service ${cls}">${service}: ${state}</li>`;
+        let overallIndicator = 'operational'; // Default
+
+        components.forEach(service => {
+          const serviceDiv = document.createElement('div');
+          serviceDiv.className = 'service';
+
+          const name = document.createElement('span');
+          name.textContent = service.name;
+
+          const statusLabel = document.createElement('span');
+          statusLabel.textContent = service.status.charAt(0).toUpperCase() + service.status.slice(1);
+
+          let statusClass = '';
+          switch(service.status) {
+            case 'operational': statusClass = 'operational'; break;
+            case 'degraded_performance': 
+            case 'partial_outage': statusClass = 'minor'; 
+              if (overallIndicator !== 'major') overallIndicator = 'minor'; break;
+            case 'major_outage': statusClass = 'major'; overallIndicator = 'major'; break;
+            default: statusClass = 'minor'; 
+              if (overallIndicator !== 'major') overallIndicator = 'minor'; break;
+          }
+
+          statusLabel.className = 'status ' + statusClass;
+          serviceDiv.appendChild(name);
+          serviceDiv.appendChild(statusLabel);
+          container.appendChild(serviceDiv);
+        });
+
+        // Set overall status
+        let overallText = '';
+        switch(overallIndicator) {
+          case 'operational': overallText = 'Operational'; overall.className = 'overall-status operational'; break;
+          case 'minor': overallText = 'Minor Issues'; overall.className = 'overall-status minor'; break;
+          case 'major': overallText = 'Major Outage'; overall.className = 'overall-status major'; break;
         }
-        html += `</ul><p>Last Checked: ${new Date(statusData.last_checked).toUTCString()}</p>`;
-        html += `<p>Source: <a href="https://status.epicgames.com" target="_blank">Epic Games Status</a></p>`;
-        document.getElementById("status").innerHTML = html;
+        overall.textContent = overallText;
+
+        // Last updated
+        const updated = new Date(data.page.updated_at);
+        const updatedDiv = document.createElement('div');
+        updatedDiv.style.marginTop = '15px';
+        updatedDiv.style.fontSize = '0.85rem';
+        updatedDiv.style.color = '#aaa';
+        updatedDiv.textContent = `Last updated: ${updated.toLocaleString()}`;
+        container.appendChild(updatedDiv);
+
       } catch (err) {
-        document.getElementById("status").innerHTML = `<p class="offline">Error fetching status</p>`;
-        const badgeEl = document.getElementById("badge");
-        badgeEl.textContent = "ERROR";
-        badgeEl.style.backgroundColor = "#ff0000";
-        console.error(err);
+        container.innerHTML = '<p style="color:#ff4d4d;">Failed to load statuses.</p>';
+        overall.textContent = 'Failed to load';
+        overall.className = 'overall-status major';
       }
     }
 
-    fetchStatus();
-    setInterval(fetchStatus, 5*60*1000);
+    fetchStatuses();
+    setInterval(fetchStatuses, 60000); // Refresh every 60 seconds
   </script>
+
 </body>
 </html>
