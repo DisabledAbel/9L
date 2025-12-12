@@ -2,171 +2,106 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fortnite Status Tracker</title>
   <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #0d1117;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 40px 20px;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 20px;
-    }
-
-    .overall-card, .card {
-      background: #161b22;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      max-width: 600px;
-      width: 100%;
-      margin-bottom: 30px;
-      text-align: center;
-    }
-
-    .overall-status {
-      font-size: 1.8rem;
-      font-weight: bold;
-      padding: 12px 20px;
-      border-radius: 12px;
-      display: inline-block;
-    }
-
-    .service {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 20px;
-      margin: 10px 0;
-      border-radius: 12px;
-      background: #0f1318;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .service:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    }
-
-    .status {
-      padding: 5px 12px;
-      border-radius: 8px;
-      font-weight: bold;
-      min-width: 100px;
-      text-align: center;
-    }
-
-    .operational { background: #00ff90; color: #000; }
-    .minor { background: #ffdd57; color: #000; }
-    .major { background: #ff4d4d; color: #fff; }
-
-    footer {
-      margin-top: 40px;
-      font-size: 0.9rem;
-      color: #888;
-    }
-
-    a {
-      color: #58a6ff;
-      text-decoration: none;
-    }
+    body { font-family: sans-serif; margin: 20px; background: #f9f9f9; color: #333; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    #searchInput { width: 100%; padding: 12px; margin-bottom: 15px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; }
+    #statusList { list-style: none; padding: 0; margin: 0; }
+    #statusList li { padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; transition: background 0.3s; }
+    .online { background-color: #d4edda; color: #155724; }
+    .degraded { background-color: #fff3cd; color: #856404; }
+    .offline { background-color: #f8d7da; color: #721c24; }
+    .icon { margin-right: 8px; font-size: 18px; }
+    mark { background-color: #ffeeba; padding: 0; }
+    #lastUpdated { margin-top: 15px; font-size: 14px; text-align: center; color: #666; }
   </style>
 </head>
 <body>
 
-  <h1>Fortnite & Epic Games Status</h1>
+<h1>Fortnite Status Tracker</h1>
+<input type="text" id="searchInput" placeholder="Search services…">
+<ul id="statusList"></ul>
+<div id="lastUpdated">Last Updated: --:--:--</div>
 
-  <div class="overall-card">
-    <p>Overall Fortnite Status:</p>
-    <p id="overallStatus" class="overall-status">Loading...</p>
-  </div>
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const statusList = document.getElementById('statusList');
+  const lastUpdated = document.getElementById('lastUpdated');
+  let statusData = [];
 
-  <div class="card" id="servicesContainer">
-    <p>Loading system statuses...</p>
-  </div>
-
-  <footer>
-    Data provided by <a href="https://status.epicgames.com" target="_blank">Epic Games Status</a>
-  </footer>
-
-  <script>
-    async function fetchStatuses() {
-      const container = document.getElementById('servicesContainer');
-      const overall = document.getElementById('overallStatus');
-
-      try {
-        const res = await fetch('https://status.epicgames.com/api/v2/components.json');
-        const data = await res.json();
-        const components = data.components;
-
-        container.innerHTML = ''; // Clear previous
-
-        let overallIndicator = 'operational'; // Default
-
-        components.forEach(service => {
-          const serviceDiv = document.createElement('div');
-          serviceDiv.className = 'service';
-
-          const name = document.createElement('span');
-          name.textContent = service.name;
-
-          const statusLabel = document.createElement('span');
-          statusLabel.textContent = service.status.charAt(0).toUpperCase() + service.status.slice(1);
-
-          let statusClass = '';
-          switch(service.status) {
-            case 'operational': statusClass = 'operational'; break;
-            case 'degraded_performance': 
-            case 'partial_outage': statusClass = 'minor'; 
-              if (overallIndicator !== 'major') overallIndicator = 'minor'; break;
-            case 'major_outage': statusClass = 'major'; overallIndicator = 'major'; break;
-            default: statusClass = 'minor'; 
-              if (overallIndicator !== 'major') overallIndicator = 'minor'; break;
-          }
-
-          statusLabel.className = 'status ' + statusClass;
-          serviceDiv.appendChild(name);
-          serviceDiv.appendChild(statusLabel);
-          container.appendChild(serviceDiv);
-        });
-
-        // Set overall status
-        let overallText = '';
-        switch(overallIndicator) {
-          case 'operational': overallText = 'Operational'; overall.className = 'overall-status operational'; break;
-          case 'minor': overallText = 'Minor Issues'; overall.className = 'overall-status minor'; break;
-          case 'major': overallText = 'Major Outage'; overall.className = 'overall-status major'; break;
-        }
-        overall.textContent = overallText;
-
-        // Last updated
-        const updated = new Date(data.page.updated_at);
-        const updatedDiv = document.createElement('div');
-        updatedDiv.style.marginTop = '15px';
-        updatedDiv.style.fontSize = '0.85rem';
-        updatedDiv.style.color = '#aaa';
-        updatedDiv.textContent = `Last updated: ${updated.toLocaleString()}`;
-        container.appendChild(updatedDiv);
-
-      } catch (err) {
-        container.innerHTML = '<p style="color:#ff4d4d;">Failed to load statuses.</p>';
-        overall.textContent = 'Failed to load';
-        overall.className = 'overall-status major';
-      }
+  // Fetch status JSON
+  async function fetchStatus() {
+    try {
+      const response = await fetch('/status.json'); // adjust path if needed
+      const data = await response.json();
+      statusData = data;
+      renderList(statusData);
+      updateTimestamp();
+    } catch (err) {
+      console.error('Error fetching status:', err);
     }
+  }
 
-    fetchStatuses();
-    setInterval(fetchStatuses, 60000); // Refresh every 60 seconds
-  </script>
+  // Render list with color coding, icons, and highlighted search
+  function renderList(data) {
+    const query = searchInput.value.toLowerCase();
+
+    // Sort by status priority: Offline > Degraded > Online
+    const sortedData = data.sort((a,b) => {
+      const priority = {offline: 0, degraded: 1, online: 2};
+      return (priority[a.status.toLowerCase()] || 3) - (priority[b.status.toLowerCase()] || 3);
+    });
+
+    statusList.innerHTML = '';
+    sortedData.forEach(item => {
+      const li = document.createElement('li');
+
+      // Determine class and icon
+      let statusClass = '';
+      let icon = '';
+      if (item.status.toLowerCase() === 'online') { statusClass = 'online'; icon = '✔️'; }
+      else if (item.status.toLowerCase() === 'degraded') { statusClass = 'degraded'; icon = '⚠️'; }
+      else if (item.status.toLowerCase() === 'offline') { statusClass = 'offline'; icon = '❌'; }
+
+      li.className = statusClass;
+
+      // Highlight search matches
+      const nameHTML = highlightText(item.name, query);
+      const statusHTML = highlightText(item.status, query);
+
+      li.innerHTML = `<span><span class="icon">${icon}</span>${nameHTML}</span><span>${statusHTML}</span>`;
+      statusList.appendChild(li);
+    });
+  }
+
+  // Highlight matching text
+  function highlightText(text, query) {
+    if (!query) return text;
+    const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+  }
+
+  function escapeRegex(string) {
+    return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  }
+
+  // Update timestamp
+  function updateTimestamp() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString();
+    lastUpdated.textContent = `Last Updated: ${timeStr}`;
+  }
+
+  // Live search
+  searchInput.addEventListener('keyup', () => {
+    renderList(statusData);
+  });
+
+  // Auto-refresh every 30 seconds
+  fetchStatus(); // initial fetch
+  setInterval(fetchStatus, 30000);
+</script>
 
 </body>
 </html>
