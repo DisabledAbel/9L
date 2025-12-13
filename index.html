@@ -6,15 +6,21 @@
 
   <style>
     body {
-      background: linear-gradient(135deg, #050b2e, #1a0033);
+      background: linear-gradient(135deg, #0d0018, #2c003f);
       color: #e6e6ff;
       font-family: Arial, sans-serif;
       padding: 20px;
     }
 
     h1 {
-      color: #b8a8ff;
-      text-shadow: 0 0 8px rgba(184, 168, 255, 0.6);
+      color: #d39fff;
+      text-shadow: 0 0 8px rgba(211, 159, 255, 0.6);
+    }
+
+    #updated {
+      font-size: 13px;
+      color: #bfa0ff;
+      margin-bottom: 10px;
     }
 
     ul {
@@ -26,43 +32,45 @@
       padding: 10px;
       margin-bottom: 8px;
       border-radius: 6px;
-      text-shadow: 0 0 4px rgba(184, 168, 255, 0.4);
+      text-shadow: 0 0 4px rgba(211, 159, 255, 0.4);
       transition: background 0.3s, transform 0.2s;
     }
 
     li:hover {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(211, 159, 255, 0.1);
       transform: translateY(-2px);
     }
 
     /* Status colors */
     .online {
-      background-color: rgba(46, 204, 113, 0.2);
-      border-left: 4px solid #2ecc71;
-      color: #c9f7dc;
+      background-color: rgba(150, 0, 255, 0.2);
+      border-left: 4px solid #a64dff;
+      color: #e6d6ff;
     }
 
     .degraded {
-      background-color: rgba(241, 196, 15, 0.2);
-      border-left: 4px solid #f1c40f;
-      color: #fff1b8;
+      background-color: rgba(255, 102, 255, 0.2);
+      border-left: 4px solid #ff66ff;
+      color: #ffd6ff;
     }
 
     .offline {
-      background-color: rgba(231, 76, 60, 0.2);
-      border-left: 4px solid #e74c3c;
-      color: #ffd6d1;
+      background-color: rgba(128, 0, 128, 0.2);
+      border-left: 4px solid #800080;
+      color: #ffb3ff;
     }
   </style>
 </head>
 <body>
 
 <h1>Fortnite Service Status</h1>
+<div id="updated">Last updated: —</div>
 
 <ul id="statusList"></ul>
 
 <script>
   const statusList = document.getElementById('statusList');
+  const updated = document.getElementById('updated');
   let services = [];
 
   function loadStatus() {
@@ -71,6 +79,7 @@
       .then(data => {
         services = data;
         render(services);
+        updateTimestamp();
       })
       .catch(() => {
         statusList.innerHTML = '<li>Unable to load status</li>';
@@ -90,6 +99,11 @@
       li.textContent = service.name + ': ' + service.status;
       statusList.appendChild(li);
     });
+  }
+
+  function updateTimestamp() {
+    const now = new Date();
+    updated.textContent = 'Last updated: ' + now.toLocaleTimeString();
   }
 
   // Initial load
