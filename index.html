@@ -1,137 +1,61 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Fortnite Status</title>
-
+  <title>Fortnite Server Status</title>
   <style>
-    /* Body and background */
-    body {
-      background: linear-gradient(135deg, #0b0018, #23003f);
-      color: #e6e6ff;
-      font-family: 'Arial', sans-serif;
-      padding: 30px;
-      margin: 0;
-    }
-
-    /* Heading */
-    h1 {
-      color: #d39fff;
-      text-shadow: 0 0 10px rgba(211, 159, 255, 0.7);
-      font-size: 2.2em;
-      margin-bottom: 10px;
-    }
-
-    /* Last updated */
-    #updated {
-      font-size: 14px;
-      color: #bfa0ff;
-      margin-bottom: 20px;
-    }
-
-    /* Status list */
-    ul {
-      list-style: none;
-      padding: 0;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    li {
-      padding: 12px 15px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      text-shadow: 0 0 6px rgba(211, 159, 255, 0.5);
-      transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
-      box-shadow: 0 0 5px rgba(211, 159, 255, 0.2);
-      cursor: default;
-    }
-
-    li:hover {
-      background: rgba(211, 159, 255, 0.15);
-      transform: translateY(-3px);
-      box-shadow: 0 0 15px rgba(211, 159, 255, 0.4);
-    }
-
-    /* Status colors */
-    .online {
-      background-color: rgba(150, 0, 255, 0.2);
-      border-left: 5px solid #a64dff;
-      color: #e6d6ff;
-      animation: pulse 2s infinite;
-    }
-
-    .degraded {
-      background-color: rgba(255, 102, 255, 0.2);
-      border-left: 5px solid #ff66ff;
-      color: #ffd6ff;
-    }
-
-    .offline {
-      background-color: rgba(128, 0, 128, 0.2);
-      border-left: 5px solid #800080;
-      color: #ffb3ff;
-    }
-
-    /* Pulse animation for online status */
-    @keyframes pulse {
-      0% { box-shadow: 0 0 8px rgba(166, 77, 255, 0.5); }
-      50% { box-shadow: 0 0 20px rgba(166, 77, 255, 0.7); }
-      100% { box-shadow: 0 0 8px rgba(166, 77, 255, 0.5); }
-    }
+    body { font-family: Arial, sans-serif; background: #121212; color: #fff; text-align: center; padding: 50px; }
+    h1 { color: #8a2be2; margin-bottom: 20px; }
+    .badge { display: inline-block; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 1.2em; margin-bottom: 20px; color: #fff; }
+    .status { display: inline-block; background: #222; padding: 20px; border-radius: 10px; text-align: left; min-width: 300px; }
+    .service { margin: 5px 0; }
+    .online { color: #00ff00; }
+    .degraded { color: #ffff00; }
+    .offline { color: #ff0000; }
   </style>
 </head>
 <body>
+  <h1>Fortnite Server Status</h1>
+  <div id="badge" class="badge">Loading...</div>
+  <div class="status" id="status">Loading...</div>
+  <script>
+    const STATUS_JSON = "status.json";
+    const BADGE_JSON = "status-badge.json";
 
-<h1>Fortnite Service Status</h1>
-<div id="updated">Last updated: —</div>
+    async function fetchStatus() {
+      try {
+        const badgeRes = await fetch(BADGE_JSON);
+        const badgeData = await badgeRes.json();
+        const badgeEl = document.getElementById("badge");
+        badgeEl.textContent = badgeData.message;
+        badgeEl.style.backgroundColor = badgeData.color;
 
-<ul id="statusList"></ul>
+        const statusRes = await fetch(STATUS_JSON);
+        const statusData = await statusRes.json();
 
-<script>
-  const statusList = document.getElementById('statusList');
-  const updated = document.getElementById('updated');
-  let services = [];
+        let html = `<p><strong>Overall Status:</strong> ${statusData.overall_status}</p><h3>Services:</h3><ul>`;
+        for (const [service, state] of Object.entries(statusData.services)) {
+          let cls = "online";
+          const s = state.toLowerCase();
+          if (s.includes("degraded")) cls = "degraded";
+          else if (s.includes("major")) cls = "offline";
+          html += `<li class="service ${cls}">${service}: ${state}</li>`;
+        }
+        html += `</ul><p>Last Checked: ${new Date(statusData.last_checked).toUTCString()}</p>`;
+        html += `<p>Source: <a href="https://status.epicgames.com" target="_blank">Epic Games Status</a></p>`;
+        document.getElementById("status").innerHTML = html;
+      } catch (err) {
+        document.getElementById("status").innerHTML = `<p class="offline">Error fetching status</p>`;
+        const badgeEl = document.getElementById("badge");
+        badgeEl.textContent = "ERROR";
+        badgeEl.style.backgroundColor = "#ff0000";
+        console.error(err);
+      }
+    }
 
-  function loadStatus() {
-    fetch('/status.json')
-      .then(res => res.json())
-      .then(data => {
-        services = data;
-        render(services);
-        updateTimestamp();
-      })
-      .catch(() => {
-        statusList.innerHTML = '<li>Unable to load status</li>';
-      });
-  }
-
-  function render(list) {
-    statusList.innerHTML = '';
-    list.forEach(service => {
-      const li = document.createElement('li');
-      const status = service.status.toLowerCase();
-
-      if (status.includes('online')) li.classList.add('online');
-      else if (status.includes('degraded')) li.classList.add('degraded');
-      else if (status.includes('offline')) li.classList.add('offline');
-
-      li.textContent = service.name + ': ' + service.status;
-      statusList.appendChild(li);
-    });
-  }
-
-  function updateTimestamp() {
-    const now = new Date();
-    updated.textContent = 'Last updated: ' + now.toLocaleTimeString();
-  }
-
-  // Initial load
-  loadStatus();
-
-  // Auto-refresh every 60 seconds
-  setInterval(loadStatus, 60000);
-</script>
-
+    fetchStatus();
+    setInterval(fetchStatus, 5*60*1000);
+  </script>
 </body>
 </html>
