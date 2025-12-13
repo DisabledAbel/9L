@@ -3,130 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <title>Fortnite Status</title>
-
-  <style>
-    body {
-      background-color: #0b1d3a;
-      color: #ffffff;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-
-    h1 {
-      color: #00b3ff;
-      letter-spacing: 0.5px;
-    }
-
-    #updated {
-      font-size: 13px;
-      color: #9bbcff;
-      margin-bottom: 10px;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      font-size: 16px;
-      border-radius: 4px;
-      border: none;
-      outline: none;
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    li {
-      padding: 10px;
-      margin-bottom: 6px;
-      background-color: #122a52;
-      border-radius: 4px;
-      border-left: 4px solid #1f3b6d;
-    }
-
-    .online {
-      border-left-color: #2ecc71;
-      color: #c9f7dc;
-    }
-
-    .degraded {
-      border-left-color: #f1c40f;
-      color: #fff1b8;
-    }
-
-    .offline {
-      border-left-color: #e74c3c;
-      color: #ffd6d1;
-    }
-  </style>
 </head>
 <body>
 
-<h1>Fortnite Status</h1>
-<div id="updated">Last updated: —</div>
+<h1>Fortnite Service Status</h1>
 
-<input type="text" id="searchInput" placeholder="Search services">
-
-<ul id="statusList"></ul>
+<ul id="status"></ul>
 
 <script>
-  const searchInput = document.getElementById('searchInput');
-  const statusList = document.getElementById('statusList');
-  const updated = document.getElementById('updated');
-  let services = [];
+  fetch('/status.json')
+    .then(response => response.json())
+    .then(data => {
+      const list = document.getElementById('status');
 
-  function loadStatus() {
-    fetch('/status.json')
-      .then(res => res.json())
-      .then(data => {
-        services = data;
-        applySearch();
-        updateTimestamp();
-      })
-      .catch(() => {
-        statusList.innerHTML = '<li>Failed to load status</li>';
+      data.forEach(service => {
+        const li = document.createElement('li');
+        li.textContent = service.name + ': ' + service.status;
+        list.appendChild(li);
       });
-  }
-
-  function updateTimestamp() {
-    const now = new Date();
-    updated.textContent = 'Last updated: ' + now.toLocaleTimeString();
-  }
-
-  function render(list) {
-    statusList.innerHTML = '';
-    list.forEach(service => {
-      const li = document.createElement('li');
-
-      const status = service.status.toLowerCase();
-      if (status.includes('online')) li.classList.add('online');
-      else if (status.includes('degraded')) li.classList.add('degraded');
-      else if (status.includes('offline')) li.classList.add('offline');
-
-      li.textContent = service.name + ' - ' + service.status;
-      statusList.appendChild(li);
+    })
+    .catch(() => {
+      document.getElementById('status').innerHTML =
+        '<li>Unable to load status</li>';
     });
-  }
-
-  function applySearch() {
-    const q = searchInput.value.toLowerCase();
-    render(
-      services.filter(s =>
-        s.name.toLowerCase().includes(q) ||
-        s.status.toLowerCase().includes(q)
-      )
-    );
-  }
-
-  searchInput.addEventListener('input', applySearch);
-
-  // Initial load
-  loadStatus();
-
-  // Auto refresh every 60 seconds
-  setInterval(loadStatus, 60000);
 </script>
 
 </body>
