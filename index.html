@@ -5,59 +5,79 @@
   <title>Fortnite Status</title>
 
   <style>
+    /* Body and background */
     body {
-      background: linear-gradient(135deg, #0d0018, #2c003f);
+      background: linear-gradient(135deg, #0b0018, #23003f);
       color: #e6e6ff;
-      font-family: Arial, sans-serif;
-      padding: 20px;
+      font-family: 'Arial', sans-serif;
+      padding: 30px;
+      margin: 0;
     }
 
+    /* Heading */
     h1 {
       color: #d39fff;
-      text-shadow: 0 0 8px rgba(211, 159, 255, 0.6);
-    }
-
-    #updated {
-      font-size: 13px;
-      color: #bfa0ff;
+      text-shadow: 0 0 10px rgba(211, 159, 255, 0.7);
+      font-size: 2.2em;
       margin-bottom: 10px;
     }
 
+    /* Last updated */
+    #updated {
+      font-size: 14px;
+      color: #bfa0ff;
+      margin-bottom: 20px;
+    }
+
+    /* Status list */
     ul {
       list-style: none;
       padding: 0;
+      max-width: 600px;
+      margin: 0 auto;
     }
 
     li {
-      padding: 10px;
-      margin-bottom: 8px;
-      border-radius: 6px;
-      text-shadow: 0 0 4px rgba(211, 159, 255, 0.4);
-      transition: background 0.3s, transform 0.2s;
+      padding: 12px 15px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      text-shadow: 0 0 6px rgba(211, 159, 255, 0.5);
+      transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+      box-shadow: 0 0 5px rgba(211, 159, 255, 0.2);
+      cursor: default;
     }
 
     li:hover {
-      background: rgba(211, 159, 255, 0.1);
-      transform: translateY(-2px);
+      background: rgba(211, 159, 255, 0.15);
+      transform: translateY(-3px);
+      box-shadow: 0 0 15px rgba(211, 159, 255, 0.4);
     }
 
     /* Status colors */
     .online {
       background-color: rgba(150, 0, 255, 0.2);
-      border-left: 4px solid #a64dff;
+      border-left: 5px solid #a64dff;
       color: #e6d6ff;
+      animation: pulse 2s infinite;
     }
 
     .degraded {
       background-color: rgba(255, 102, 255, 0.2);
-      border-left: 4px solid #ff66ff;
+      border-left: 5px solid #ff66ff;
       color: #ffd6ff;
     }
 
     .offline {
       background-color: rgba(128, 0, 128, 0.2);
-      border-left: 4px solid #800080;
+      border-left: 5px solid #800080;
       color: #ffb3ff;
+    }
+
+    /* Pulse animation for online status */
+    @keyframes pulse {
+      0% { box-shadow: 0 0 8px rgba(166, 77, 255, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(166, 77, 255, 0.7); }
+      100% { box-shadow: 0 0 8px rgba(166, 77, 255, 0.5); }
     }
   </style>
 </head>
