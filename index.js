@@ -1,52 +1,63 @@
-import fetch from "node-fetch";
 import fs from "fs";
+import crypto from "crypto";
 
-const STATUS_URL = "https://status.epicgames.com/api/v2/summary.json";
+const STATUS_FILE = "public/status.json";
 
-export async function getFortniteStatus() {
-  const res = await fetch(STATUS_URL);
-  const data = await res.json();
+function hash(obj) {
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify(obj))
+    .digest("hex");
+}
 
-  const status = {
-    overall_status: data.status.description,
-    services: {},
-    last_checked: new Date().toISOString(),
-    source: STATUS_URL
+async function run() {
+  const now = new Date().toISOString();
+
+  // 1. Fetch Fortnite status (example structure)
+  const response = await fetch("https://status.epicgames.com/api/v2/summary.json");
+  const data = await response.json();
+
+  const newStatusCore = {
+    status: data.status.indicator.toUpperCase(),
+    incidents: data.incidents ?? [],
+    message: data.status.description
   };
 
-  data.components.forEach(c => status.services[c.name] = c.status);
-  return status;
-}
+  let existing = null;
 
-export async function saveStatusToFile(filename = "status.json") {
-  const status = await getFortniteStatus();
-  fs.writeFileSync(filename, JSON.stringify(status, null, 2));
-  return status;
-}
-
-export async function saveBadgeJson(filename = "status-badge.json") {
-  const status = await getFortniteStatus();
-  let color = "lightgrey";
-  let message = status.overall_status.toUpperCase();
-
-  if (status.overall_status.includes("Operational")) {
-    color = "brightgreen"; message = "ONLINE";
-  } else if (status.overall_status.includes("Degraded")) {
-    color = "yellow"; message = "DEGRADED";
-  } else {
-    color = "red"; message = "OFFLINE";
+  if (fs.existsSync(STATUS_FILE)) {
+    existing = JSON.parse(fs.readFileSync(STATUS_FILE, "utf8"));
   }
 
-  const badge = { schemaVersion: 1, label: "Fortnite", message, color };
-  fs.writeFileSync(filename, JSON.stringify(badge, null, 2));
-  return badge;
+  // 2. Compare only the meaningful fields
+  const oldHash = existing ? hash({
+    status: existing.status,
+    incidents: existing.incidents,
+    message: existing.message
+  }) : null;
+
+  const newHash = hash(newStatusCore);
+
+  // 3. If nothing changed, only update lastChecked and exit
+  if (oldHash === newHash && existing) {
+    existing.lastChecked = now;
+    fs.writeFileSync(STATUS_FILE, JSON.stringify(existing, null, 2));
+    console.log("No status change detected");
+    return;
+  }
+
+  // 4. Status changed → update lastChanged
+  const output = {
+    ...newStatusCore,
+    lastChecked: now,
+    lastChanged: now
+  };
+
+  fs.writeFileSync(STATUS_FILE, JSON.stringify(output, null, 2));
+  console.log("Status change detected and saved");
 }
 
-// Direct run
-if (process.argv[1] === new URL(import.meta.url).pathname) {
-  (async () => {
-    await saveStatusToFile();
-    await saveBadgeJson();
-    console.log("Status and badge JSON saved");
-  })();
-}
+run().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
